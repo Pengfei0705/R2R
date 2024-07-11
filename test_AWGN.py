@@ -6,16 +6,16 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from models import DnCNN
+from models import UNet
 from utils import *
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-parser = argparse.ArgumentParser(description="DnCNN_Test")
-parser.add_argument("--num_of_layers", type=int, default=17, help="Number of total layers")
+parser = argparse.ArgumentParser(description="UNet")
+# parser.add_argument("--num_of_layers", type=int, default=17, help="Number of total layers")
 parser.add_argument("--logdir", type=str, default="logs", help='path of log files')
-parser.add_argument("--test_data", type=str, default='bsd68', help='test dataset')
+parser.add_argument("--test_data", type=str, default='test', help='test dataset')
 parser.add_argument("--test_noiseL", type=float, default=25, help='noise level used on test set')
 parser.add_argument("--alpha", type=float, default=0.5, help='R2R recorruption parameter')
 parser.add_argument("--training", type=str, default="R2R", help='R2R or N2C')
@@ -27,14 +27,14 @@ def normalize(data):
 def main():
     # Build model
     print('Loading model ...\n')
-    net = DnCNN(channels=1, num_of_layers=opt.num_of_layers)
+    net = UNet()
     device_ids = [0]
     model = nn.DataParallel(net, device_ids=device_ids).cuda()
     model.load_state_dict(torch.load(os.path.join(opt.logdir, 'net.pth')))
     model.eval()
     # load data info
     print('Loading data info ...\n')
-    files_source = glob.glob(os.path.join('data', opt.test_data, '*.png'))
+    files_source = glob.glob(os.path.join('data', opt.test_data, '*.jpg'))
     files_source.sort()
     # process data
     psnr_test = 0

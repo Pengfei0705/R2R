@@ -7,15 +7,15 @@ import torch.optim as optim
 import torchvision.utils as utils
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
-from models import DnCNN
+from models import UNet
 from dataset import prepare_data, Dataset_train, Dataset_val
 from utils import *
 from datetime import datetime
 
-parser = argparse.ArgumentParser(description="DnCNN")
+parser = argparse.ArgumentParser(description="UNet")
 parser.add_argument("--prepare_data", action='store_true',  help='run prepare_data or not')
-parser.add_argument("--batchSize", type=int, default=5, help="Training batch size")
-parser.add_argument("--num_of_layers", type=int, default=17, help="Number of total layers")
+parser.add_argument("--batchSize", type=int, default=32, help="Training batch size")
+# parser.add_argument("--num_of_layers", type=int, default=17, help="Number of total layers")
 parser.add_argument("--epochs", type=int, default=50, help="Number of training epochs")
 parser.add_argument("--milestone", type=int, default=30, help="When to decay learning rate; should be less than epochs")
 parser.add_argument("--lr", type=float, default=1e-3, help="Initial learning rate")
@@ -44,7 +44,7 @@ def main():
     print("# of training samples: %d\n" % int(len(dataset_train)))
 
     # Build model
-    net = DnCNN(channels=1, num_of_layers=opt.num_of_layers)
+    net = UNet()
     net.apply(weights_init_kaiming)
     criterion = nn.MSELoss(size_average=False)
     # Move to GPU
@@ -178,6 +178,6 @@ if __name__ == "__main__":
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = str(opt.gpu)
     if opt.prepare_data is True:
-         prepare_data(data_path='./data/',sigma=25, patch_size=100, stride=50, aug_times=1)
+         prepare_data(data_path='./data/', sigma=25, patch_size=100, stride=50, aug_times=1)
     main()
 
