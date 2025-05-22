@@ -13,6 +13,26 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = str(2)
 
 
+"""
+def generate_low_freq_noise_torch(size):
+    # Generate low-frequency noise directly on GPU.
+    # Generate frequency domain noise
+    freq_noise = torch.randn(size, dtype=torch.float32, device='cuda')
+
+    # Low-pass filter to retain only low frequencies
+    X, Y = torch.meshgrid(torch.arange(size[0], device='cuda'), torch.arange(size[1], device='cuda'))
+    centerX, centerY = size[0] // 2, size[1] // 2
+    radius = min(centerX, centerY) / 4
+    mask = torch.sqrt((X - centerX) ** 2 + (Y - centerY) ** 2) <= radius
+
+    # Apply low-pass filter
+    freq_noise = torch.fft.fftshift(torch.fft.fft2(freq_noise))
+    freq_noise[~mask] = 0
+    freq_noise = torch.fft.ifft2(torch.fft.ifftshift(freq_noise))
+    low_freq_noise = torch.real(freq_noise)
+
+    return low_freq_noise
+"""
 def normalize(data):
     return data / 255.
 
@@ -75,11 +95,10 @@ def prepare_data(data_path, sigma, patch_size, stride, aug_times=1):
         for k in range(len(scales)):
             Img = cv2.resize(img, (int(h * scales[k]), int(w * scales[k])), interpolation=cv2.INTER_CUBIC)
             Img = np.expand_dims(Img[:, :, 0].copy(), 0)
-            Img_noisy = Img + np.random.normal(0, sigma / 255., Img.shape)
+            Img_noisy = Img + np.random.normal(0,sigma/255.,Img.shape)  # noise type
 
             patches = Im2Patch(Img, win=patch_size, stride=stride)
             patches_noisy = Im2Patch(Img_noisy, win=patch_size, stride=stride)
-            # patches_noisy2 = Im2Patch(Img_noisy2, win=patch_size, stride=stride)
             print("file: %s scale %.1f # samples: %d" % (files[i], scales[k], patches.shape[3] * aug_times))
             for n in range(patches.shape[3]):
                 data = patches[:, :, :, n].copy()
@@ -104,7 +123,7 @@ def prepare_data(data_path, sigma, patch_size, stride, aug_times=1):
     #    # val
     print('\n process validation data')
     files.clear()
-    files = glob.glob(os.path.join(data_path, 'test', '*.jpg'))
+    files = glob.glob(os.path.join(data_path, 'val', '*.jpg'))
     files.sort()
     h5f = h5py.File('val_%s_Set68.h5' % (sigma), 'w')
     val_num = 0
@@ -113,7 +132,9 @@ def prepare_data(data_path, sigma, patch_size, stride, aug_times=1):
         img = cv2.imread(files[i])
         img = np.expand_dims(img[:, :, 0], 0)
         img = np.float32(normalize(img))
-        img_noisy = img + np.random.normal(0, sigma / 255., img.shape)
+
+        img_noisy = img + np.random.normal(0,sigma/255.,img.shape)  # noise type
+
         h5f.create_dataset(str(val_num), data=np.stack((img, img_noisy), axis=0))
         val_num += 1
     h5f.close()
@@ -166,6 +187,5 @@ class Dataset_val(udata.Dataset):
         h5f.close()
         return torch.Tensor(clean), torch.Tensor(noisy)
 
-
 if __name__ == "__main__":
-    prepare_data(data_path='./data/', sigma=25, patch_size=40, stride=10, aug_times=1)
+    prepare_data(data_path='./data/', sigma=0, patch_size=128, stride=50, aug_times=1)
